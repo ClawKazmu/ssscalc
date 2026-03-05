@@ -5,6 +5,7 @@ import os
 import json
 from dotenv import load_dotenv
 import logging
+from fastapi.responses import FileResponse
 
 load_dotenv()
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -12,44 +13,43 @@ logger = logging.getLogger("ssscalc")
 
 app = FastAPI(title="SSS Contribution Calculator", version="0.1.0")
 
-# Simplified SSS contribution table for 2024 (Employee/Employer/EC)
-# Ranges are monthly salary credit. Values in PHP.
-# Source: SSS Contribution Table (2024)
-SSS_TABLE = [
-    # (min, max, ee, er, ec)
-    (0, 3000, 135, 195, 30),
-    (3000, 5000, 180, 270, 45),
-    (5000, 7000, 225, 337.5, 56.25),
-    (7000, 9000, 270, 405, 67.5),
-    (9000, 11000, 315, 472.5, 78.75),
-    (11000, 13000, 360, 540, 90),
-    (13000, 15000, 405, 607.5, 101.25),
-    (15000, 17000, 450, 675, 112.5),
-    (17000, 19000, 495, 742.5, 123.75),
-    (19000, 21000, 540, 810, 135),
-    (21000, 23000, 585, 877.5, 146.25),
-    (23000, 25000, 630, 945, 157.5),
-    (25000, 27000, 675, 1012.5, 168.75),
-    (27000, 29000, 720, 1080, 180),
-    (29000, 31000, 765, 1147.5, 191.25),
-    (31000, 33000, 810, 1215, 202.5),
-    (33000, 35000, 855, 1282.5, 213.75),
-    (35000, 37000, 900, 1350, 225),
-    (37000, 39000, 945, 1417.5, 236.25),
-    (39000, 41000, 990, 1485, 247.5),
-    (41000, 43000, 1035, 1552.5, 258.75),
-    (43000, 45000, 1080, 1620, 270),
-    (45000, 47000, 1125, 1687.5, 281.25),
-    (47000, 49000, 1170, 1755, 292.5),
-    (49000, 50000, 1215, 1822.5, 303.75),
-]
+# SSS Contribution Table configuration for 2024
+# Minimum monthly salary credit
+MIN_MSC = 3000.0
+# Maximum monthly salary credit for 2024 (per official schedule)
+MAX_MSC = 25000.0
+STEP = 1000.0
+
+# Base contribution amounts for MIN_MSC (3000)
+BASE_EE = 135.0
+BASE_ER = 195.0
+BASE_EC = 30.0
+
+# Incremental contributions per STEP (1000 increase in MSC)
+INCR_EE = 22.5
+INCR_ER = 37.5
+INCR_EC = 7.5
+
+# Generate the full SSS table covering all brackets from MIN_MSC to MAX_MSC inclusive.
+# Each entry is (min_salary, max_salary, ee, er, ec) with half-open interval [min, max)
+SSS_TABLE = []
+num_steps = int((MAX_MSC - MIN_MSC) / STEP) + 1
+for i in range(num_steps):
+    msc = MIN_MSC + i * STEP
+    ee = BASE_EE + i * INCR_EE
+    er = BASE_ER + i * INCR_ER
+    ec = BASE_EC + i * INCR_EC
+    SSS_TABLE.append((msc, msc + STEP, ee, er, ec))
 
 def get_rates(salary: float):
-    # find bracket where salary >= min and < max, or top bracket
+    # Clamp salary to the allowable range [MIN_MSC, MAX_MSC]
+    salary = max(salary, MIN_MSC)
+    salary = min(salary, MAX_MSC)
+    # Find bracket where salary >= min and < max
     for min_s, max_s, ee, er, ec in SSS_TABLE:
         if min_s <= salary < max_s:
             return ee, er, ec
-    # if above max, use last bracket
+    # Fallback: should not happen if table covers up to MAX_MSC, but return last if needed
     return SSS_TABLE[-1][2], SSS_TABLE[-1][3], SSS_TABLE[-1][4]
 
 class CalcRequest(BaseModel):
@@ -89,5 +89,9 @@ def calculate(req: CalcRequest):
     )
 
 @app.get("/")
+def read_root():
+    return FileResponse("index.html")
+
+@app.get("/health")
 def health():
     return {"status": "ok", "service": "ssscalc"}

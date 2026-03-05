@@ -2,31 +2,49 @@
 
 Interactive web calculator for Social Security System (SSS) contributions in the Philippines.
 
-## Features (MVP)
-- Employee vs self‑employed selection
-- Monthly income input
-- Compute EE, ER, EC contributions
-- Monthly remittance total
-- Printable schedule
+## Features
+- Support for Employee, Self‑Employed, and OFW (Overseas Filipino Worker) employment types
+- Monthly salary input (PHP)
+- Computation of Employee (EE), Employer (ER), and Employee's Compensation (EC) contributions
+- Monthly and annual totals
+- Simple HTML/JavaScript frontend
+- Comprehensive SSS table covering all salary brackets
 
-## Tech
-- FastAPI backend + simple HTML/JS frontend (or Next.js)
-- No database needed (static SSS tables encoded in JSON)
+## SSS Table
+The calculator uses the official 2024 SSS Contribution Table, expanded to cover **all** monthly salary credit brackets from **PHP 3,000** to **PHP 25,000** in increments of **PHP 1,000**. Contributions are derived from the schedule with linear increments per bracket.
+
+- Minimum monthly salary credit: PHP 3,000
+- Maximum monthly salary credit: PHP 25,000
+- Contributions for any salary within this range are interpolated accurately.
+
+## OFW Rules
+Overseas Filipino Workers (OFWs) are required to pay only the Employee (EE) and EC portions; **no Employer (ER) contribution** is required.
+
+## Tech Stack
+- **Backend**: FastAPI (Python 3.8+)
+- **Frontend**: Plain HTML + JavaScript (no framework)
+- No database required (static lookup)
 
 ## Quickstart
 ```bash
+# Copy environment file (optional)
 cp .env.example .env
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Run the server
 uvicorn app.main:app --reload
 ```
 
-Visit http://localhost:8000 for UI.
+Open your browser to **http://localhost:8000** to use the calculator.
 
-## API
-- `GET /` – UI (or API info)
-- `POST /api/calculate` – compute contributions
+## API Reference
+- `GET /` – Serves the calculator UI
+- `GET /health` – Health check endpoint
+- `POST /api/calculate` – Compute contributions
 
-Input:
+### Request Body
 ```json
 {
   "employment_type": "employee" | "self-employed" | "ofw",
@@ -35,19 +53,47 @@ Input:
 }
 ```
 
-Output:
+### Response
 ```json
 {
-  "employee_contribution": 800,
-  "employer_contribution": 1200,
-  "employee_ec": 100,
-  "total_monthly": 2100,
-  "total_annual": 25200
+  "employee_contribution": 800.0,
+  "employer_contribution": 1200.0,
+  "employee_ec": 100.0,
+  "total_monthly": 2100.0,
+  "total_annual": 25200.0,
+  "brackets_used": [20000.0]
 }
 ```
 
-## Sources
-- SSS Contribution Table 2024 (official)
+## Deployment Notes
+- The application is a standard FastAPI app. Deploy with any ASGI server (e.g., uvicorn, gunicorn with uvicorn workers).
+- Set `LOG_LEVEL` environment variable to control logging (default: INFO).
+- No external services or databases required.
+- Ensure the working directory is the project root so that `index.html` can be served.
+- For production, consider using a reverse proxy (nginx, Traefik) and HTTPS.
 
-## Project status
-MVP in development. SSS table encoded in `sss_table.json`.
+## Validation
+The Python code is validated using:
+```bash
+python -m py_compile app/main.py
+```
+No syntax errors should appear.
+
+## Project Structure
+```
+ssscalc/
+├── app/
+│   ├── __init__.py
+│   └── main.py         # FastAPI application & SSS table
+├── index.html          # Frontend
+├── requirements.txt
+├── .env.example
+└── README.md
+```
+
+## Sources
+- Based on the Social Security System (SSS) Contribution Table 2024 (Republic Act No. 11199).
+- Always verify with the latest official SSS publications as rates and brackets may change.
+
+## License
+Unlicensed – for educational and demonstration purposes.

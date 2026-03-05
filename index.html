@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSS Contribution Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>SSS Contribution Calculator</h1>
+    <p>Compute SSS contributions for employees, self-employed, and OFWs.</p>
+
+    <div class="form-group">
+        <label for="employment_type">Employment Type</label>
+        <select id="employment_type">
+            <option value="employee">Employee</option>
+            <option value="self-employed">Self-Employed</option>
+            <option value="ofw">OFW (Overseas Filipino Worker)</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="monthly_salary">Monthly Salary (PHP)</label>
+        <input type="number" id="monthly_salary" min="0" step="0.01" placeholder="e.g., 20000">
+    </div>
+
+    <div class="form-group">
+        <label for="year">Year</label>
+        <input type="number" id="year" min="2024" max="2026" value="2024">
+    </div>
+
+    <button onclick="calculate()">Calculate</button>
+
+    <div id="result"></div>
+
+    <script>
+        async function calculate() {
+            const employmentType = document.getElementById('employment_type').value;
+            const monthlySalary = parseFloat(document.getElementById('monthly_salary').value);
+            const year = parseInt(document.getElementById('year').value);
+            const resultDiv = document.getElementById('result');
+
+            if (isNaN(monthlySalary) || monthlySalary <= 0) {
+                resultDiv.innerHTML = '<p class="error">Please enter a valid monthly salary.</p>';
+                return;
+            }
+
+            const payload = {
+                employment_type: employmentType,
+                monthly_salary: monthlySalary,
+                year: year
+            };
+
+            try {
+                const response = await fetch('/api/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const err = await response.text();
+                    throw new Error(err || 'Calculation failed');
+                }
+
+                const data = await response.json();
+                // Format the output as a readable table
+                const output = `
+<strong>Results:</strong>
+Employee Contribution: PHP ${data.employee_contribution.toFixed(2)}
+Employer Contribution: PHP ${data.employer_contribution.toFixed(2)}
+EC Contribution: PHP ${data.employee_ec.toFixed(2)}
+<strong>Total Monthly: PHP ${data.total_monthly.toFixed(2)}</strong>
+Total Annual: PHP ${data.total_annual.toFixed(2)}
+`;
+                resultDiv.innerHTML = `<pre>${output}</pre>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

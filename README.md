@@ -65,6 +65,16 @@ Open your browser to **http://localhost:8000** to use the calculator.
 }
 ```
 
+## Rate Limiting
+
+- Free tier: 100 calculations per month per user.
+- Users are identified via HTTP headers:
+  - `X-User-Email`: Your email address (preferred)
+  - `X-API-Key`: Your API key
+  - If neither is provided, usage is tracked by IP address (may be shared among multiple users).
+- When the monthly quota is exhausted, the API returns **HTTP 429 Too Many Requests** with a JSON body containing upgrade information.
+- To increase your limits, please contact the administrator for paid plans.
+
 ## Deployment Notes
 - The application is a standard FastAPI app. Deploy with any ASGI server (e.g., uvicorn, gunicorn with uvicorn workers).
 - Set `LOG_LEVEL` environment variable to control logging (default: INFO).

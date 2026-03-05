@@ -23,7 +23,7 @@ Overseas Filipino Workers (OFWs) are required to pay only the Employee (EE) and 
 ## Tech Stack
 - **Backend**: FastAPI (Python 3.8+)
 - **Frontend**: Plain HTML + JavaScript (no framework)
-- No database required (static lookup)
+- No database required (contributions computed using official percentages)
 
 ## Quickstart
 ```bash
